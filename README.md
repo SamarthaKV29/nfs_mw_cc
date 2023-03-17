@@ -23,3 +23,18 @@ That's good to hear! With that many close calls per video, you should be able to
 To make the AI solution more efficient, you can use a multi-threaded or distributed processing approach to analyze multiple videos simultaneously. You may also want to consider using a GPU-accelerated deep learning framework to speed up the training and inference processes.
 
 So currently this project is in it's `Step 1`
+
+> How to do step 1
+
+To collect and preprocess the data, you can follow these steps:
+
+1. Gather all the game recording videos of NFS Most Wanted 2008 that you have and store them in a directory on your computer. Make sure that the videos are in a consistent format and resolution.
+
+2. Use a video processing library like OpenCV to normalize the brightness and contrast levels across all the videos. You can do this by applying a histogram equalization or a gamma correction transformation to each frame of the video.
+
+3. Split the videos into shorter clips to make it easier to annotate and train the AI model. You can use a video editing software like Adobe Premiere or a command-line tool like FFmpeg to split the videos into smaller clips.
+
+Here's an example command to split a video into 30-second clips using FFmpeg:
+```
+ffmpeg -i input.mp4 -c copy -map 0 -segment_time 30 -f segment output_%03d.mp4
+```

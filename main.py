@@ -1,38 +1,24 @@
 import os
 import normalize
+import concurrent.futures
 
 # Define paths
-videos_path = "videos/original"
-resized_path = "videos/resized"
-equalized_path = "videos/equalized"
+video_dir = "videos/original"
+processed_dir = "videos/processed"
 
 # Create directories if they don't exist
-os.makedirs(resized_path, exist_ok=True)
-os.makedirs(equalized_path, exist_ok=True)
+os.makedirs(processed_dir, exist_ok=True)
+
 
 def clean_up():
-    # Define output directories
-    resize_dir = 'videos/resized/'
-    equalize_dir = 'videos/equalized/'
-
-    # Remove contents of resize_dir
-    for filename in os.listdir(resize_dir):
-        file_path = os.path.join(resize_dir, filename)
+    # Remove contents of processed_dir
+    for filename in os.listdir(processed_dir):
+        file_path = os.path.join(processed_dir, filename)
         try:
             if os.path.isfile(file_path) or os.path.islink(file_path):
                 os.unlink(file_path)
         except Exception as e:
             print('Failed to delete %s. Reason: %s' % (file_path, e))
-
-    # Remove contents of equalize_dir
-    for filename in os.listdir(equalize_dir):
-        file_path = os.path.join(equalize_dir, filename)
-        try:
-            if os.path.isfile(file_path) or os.path.islink(file_path):
-                os.unlink(file_path)
-        except Exception as e:
-            print('Failed to delete %s. Reason: %s' % (file_path, e))
-
 
 
 def main():
@@ -40,15 +26,27 @@ def main():
     clean_up()
     process_videos()
 
-def process_videos():
-    for file in os.listdir(videos_path):
-        if file.endswith(".mp4"):
-            in_path = os.path.join(videos_path, file)
-            resize_path = os.path.join(resized_path, file)
-            equalize_path = os.path.join(equalized_path, file)
 
-            normalize.resize_video(in_path, resize_path)
-            normalize.histogram_equalization_video(in_path, equalize_path)
+def process_videos():
+    # list all video files
+    video_files = [os.path.join(video_dir, f) for f in os.listdir(video_dir) if f.endswith(".mp4")]
+
+    with concurrent.futures.ThreadPoolExecutor() as executor:
+        # process videos in parallel
+        futures = []
+        for video_file in video_files:
+            processed_file = os.path.join(processed_dir, os.path.basename(video_file))
+            futures.append(executor.submit(normalize.process_video, video_file, processed_file))
+
+        # show progress
+        for i, future in enumerate(concurrent.futures.as_completed(futures)):
+            print(f"Processed {i+1}/{len(futures)} videos")
+            # check for exceptions
+            try:
+                _ = future.result()
+            except Exception as e:
+                print(f"Error processing video: {e}")
+
 
 if __name__ == '__main__':
     main()
