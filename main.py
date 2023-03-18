@@ -1,51 +1,46 @@
 import os
-import normalize
-import concurrent.futures
+import helpers.tools as tools
+import argparse
 
-# Define paths
-video_dir = "videos/original"
-processed_dir = "videos/processed"
+from settings import base_dir, videos_dir, processed_dir, annotated_dir, labels_dir
 
 # Create directories if they don't exist
+os.makedirs(base_dir, exist_ok=True)
+os.makedirs(videos_dir, exist_ok=True)
 os.makedirs(processed_dir, exist_ok=True)
-
-
-def clean_up():
-    # Remove contents of processed_dir
-    for filename in os.listdir(processed_dir):
-        file_path = os.path.join(processed_dir, filename)
-        try:
-            if os.path.isfile(file_path) or os.path.islink(file_path):
-                os.unlink(file_path)
-        except Exception as e:
-            print('Failed to delete %s. Reason: %s' % (file_path, e))
+os.makedirs(annotated_dir, exist_ok=True)
+os.makedirs(labels_dir, exist_ok=True)
 
 
 def main():
     print("Starting main")
-    clean_up()
-    process_videos()
 
+    parser = argparse.ArgumentParser()
+    group = parser.add_mutually_exclusive_group(required=True)
+    group.add_argument('-p', '--process', help='Process/Re-process videos', action='store_true')
+    group.add_argument('-a', '--annotate', help='Launch annotate tool', action='store_true')
+    group.add_argument('-g', '--generate-labels', help='Generate label from annotated data', action='store_true')
+    parser.add_argument('--width', help='Sizes: 640 896 1024 1280', choices=[640, 896, 1024, 1280], required=False)
+    parser.add_argument('--height', help='Sizes: 640 896 1024 1280', choices=[360, 504, 576, 720], required=False)
 
-def process_videos():
-    # list all video files
-    video_files = [os.path.join(video_dir, f) for f in os.listdir(video_dir) if f.endswith(".mp4")]
+    args = parser.parse_args()
 
-    with concurrent.futures.ThreadPoolExecutor() as executor:
-        # process videos in parallel
-        futures = []
-        for video_file in video_files:
-            processed_file = os.path.join(processed_dir, os.path.basename(video_file))
-            futures.append(executor.submit(normalize.process_video, video_file, processed_file))
+    if args.process:
+        tools.clean_up(processed_dir)
+        tools.process_videos(videos_dir, processed_dir)
+    if args.annotate:
+        w = 1024
+        h = 576
 
-        # show progress
-        for i, future in enumerate(concurrent.futures.as_completed(futures)):
-            print(f"Processed {i+1}/{len(futures)} videos")
-            # check for exceptions
-            try:
-                _ = future.result()
-            except Exception as e:
-                print(f"Error processing video: {e}")
+        if args.width is not None:
+            w = args.width
+        if args.height is not None:
+            h = args.height
+
+        tools.annotate_videos(processed_dir, annotated_dir, w, h)
+
+    if args.generate_labels:
+        tools.generate_labels(annotated_dir, labels_dir)
 
 
 if __name__ == '__main__':

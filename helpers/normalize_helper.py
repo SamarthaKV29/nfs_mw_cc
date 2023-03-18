@@ -29,12 +29,24 @@ def process_video(in_path, out_path):
 
             # Convert the frame to grayscale
             gray = cv2.cvtColor(resized_frame, cv2.COLOR_BGR2GRAY)
-
             # Apply histogram equalization to the grayscale frame
-            equalized = cv2.equalizeHist(gray)
-
+            # equalized = cv2.equalizeHist(gray)
             # Convert the equalized frame back to BGR
-            bgr = cv2.cvtColor(equalized, cv2.COLOR_GRAY2BGR)
+            # bgr = cv2.cvtColor(equalized, cv2.COLOR_GRAY2BGR)
+
+            # Convert the frame to HSV color space
+            hsv = cv2.cvtColor(resized_frame, cv2.COLOR_BGR2HSV_FULL)
+            # Split the channels
+            h, s, v = cv2.split(hsv)
+
+            # Apply histogram equalization to the value channel
+            v_eq = cv2.equalizeHist(v)
+
+            # Merge the channels back into an HSV image
+            hsv_eq = cv2.merge([h, s, v_eq])
+
+            # Convert the HSV image back to BGR color space
+            bgr = cv2.cvtColor(hsv_eq, cv2.COLOR_HSV2BGR_FULL)
 
             # Write the frame to the output video
             out.write(bgr)
