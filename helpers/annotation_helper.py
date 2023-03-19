@@ -93,7 +93,8 @@ def _annotate_video(in_path, out_path, win_w, win_h):
         'show_table': True,
         'is_scoring': False,
         'is_playing': True,
-        'clips': []
+        'clips': [],
+        'negative': False
     }
 
     if os.path.isfile(out_file):
@@ -127,7 +128,7 @@ def _annotate_video(in_path, out_path, win_w, win_h):
         if frame_num in range(0, frames_count):
             for clip in props['clips']:
                 if frame_num in range(clip.start, clip.end):
-                    clip_region = clip.area
+                    clip_region = Annotation.Area(**clip.area)
 
         def show_frame(f, props):
             current_frame = cap.get(cv2.CAP_PROP_POS_FRAMES)
@@ -136,6 +137,7 @@ def _annotate_video(in_path, out_path, win_w, win_h):
             if f in range(0, frames_count):
                 if f != current_frame:
                     cap.set(cv2.CAP_PROP_POS_FRAMES, f)
+                    props['negative'] = False
 
                 ret, frame = cap.read()
                 if not ret:
@@ -144,6 +146,9 @@ def _annotate_video(in_path, out_path, win_w, win_h):
                 # Add text to frame
                 if props['started']:
                     cv2.putText(frame, f"Start: {start}", (10, 80), cv2.FONT_HERSHEY_SIMPLEX, 0.7, orange, 2)
+
+                if props['negative']:
+                    cv2.putText(frame, f"End cannot be before Start!", (10, 80), cv2.FONT_HERSHEY_SIMPLEX, 0.7, red, 2)
 
                 if not props['started'] and props['show_table']:
                     i = 0
@@ -194,8 +199,11 @@ def _annotate_video(in_path, out_path, win_w, win_h):
                 else:
                     props['started'] = False
                     end = frame_num
-                    props['show_table'] = False
-                    props['is_scoring'] = True
+                    if end > start:
+                        props['show_table'] = False
+                        props['is_scoring'] = True
+                    else:
+                        props['negative'] = True
 
             if key == ord('d'):
                 if not props['started']:

@@ -34,13 +34,14 @@ def process_videos(videos_dir, processed_dir, ):
 
         # show progress
         for i, future in enumerate(concurrent.futures.as_completed(futures)):
-            print(f"Processed {i+1}/{len(futures)} videos")
+            
             # check for exceptions
             try:
                 _ = future.result()
             except Exception as e:
                 print(f"Error processing video: {e}")
 
+        print(f"\n\nProcessed {len(futures)} videos")
 
 def clean_up(processed_dir):
     # Remove contents of processed_dir
